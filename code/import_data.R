@@ -29,3 +29,15 @@ ambos %>%
     left_join(geographies, by = c("country" = "name")) %>% 
     select(-members_oecd_g77, -`World bank region`, -`UN member since`) %>% 
     write_csv(here::here("data/participation-per-country.csv"))
+
+
+
+# Estamos interessados na relação entre quanto as pessoas de diferentes países comentam em questões dos outros. 
+# A proporção das pessoas do país que comentou nas questões de outros está medido na variável `comentaram_prop`. 
+# Considerando essa variável, queremos examinar a relação entre ela e o quão hierárquicas são as relações em um país (`PDI`). Queremos também levar em conta o quanto as pessoas daquele país têm acesso à Internet (`Internet`) e qual o tamanho da base de dados que detectamos daquele país (`usuarios`). 
+
+## Examinando essa relação
+# Faça uma visualização que usa os princípios de eficácia no projeto de visualizações para facilitar as comparações 
+# que você acha que são as mais importantes para entendermos esse contexto. 
+
+
