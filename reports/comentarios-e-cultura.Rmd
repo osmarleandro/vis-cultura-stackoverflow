@@ -1,9 +1,10 @@
 ---
-title: "Comentários e cultura"
+title: "Valores, indicadores culturais e participação no StackExchange"
 output:
-    html_document:
+    html_document: 
     df_print: paged
 theme: sandstone
+author: "Osmar Leandro"
 ---
 
 ```{r library, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
