@@ -6,20 +6,24 @@ output:
 theme: sandstone
 ---
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r library, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
 library(tidyverse)
 library(here)
+
+library(plotly)
 library(viridis)
-source(here::here("code/import_data.R"))
-theme_set(theme_bw())
+library(hrbrthemes)
+
+# source(here::here("code/import_data.R"))
+theme_set(theme_gray())
 
 knitr::opts_chunk$set(tidy = FALSE,
                       fig.width = 6,
                       fig.height = 5)
 ```
 
-```{r read}
-dados = read_csv(
+```{r read_data, echo=TRUE, paged.print=TRUE}
+ppc = read_csv(
     here::here("data/participation-per-country.csv"),
     col_types = cols(
         .default = col_double(),
@@ -33,7 +37,7 @@ dados = read_csv(
     )
 ) %>% 
     filter(usuarios > 200)
-glimpse(dados)
+glimpse(ppc)
 ```
 
 Estamos interessados na relação entre quanto as pessoas de diferentes países comentam em questões dos outros. A proporção das pessoas do país que comentou nas questões de outros está medido na variável `comentaram_prop`. 
@@ -42,13 +46,139 @@ Considerando essa variável, queremos examinar a relação entre ela e o quão h
 
 ## Examinando essa relação
 
-Faça uma visualização que usa os princípios de eficácia no projeto de visualizações para facilitar as comparações que você acha que são as mais importantes para entendermos esse contexto. 
+**Faça uma visualização que usa os princípios de eficácia no projeto de visualizações para facilitar as comparações que você acha que são as mais importantes para entendermos esse contexto.**
+
+**Bônus: inclua o continente dos países (`six_regions`) na visualização.**
+
+### Processo de limpeza dos dados
+
+Vamos verificar um sumário de cada variável.
+```{r summary, echo=TRUE, message=FALSE, warning=FALSE, paged.print=TRUE}
+summary(ppc)
+```
+
+Considerando que o conjunto de regiões possui valores não disponíveis, vamos filtrar do nosso conjunto de dados.
+
+```{r filter_data, echo=TRUE, paged.print=TRUE}
+ppc <- ppc %>% 
+    filter(!is.na(six_regions))
+```
+
+### Objetivo
+
+Para investigar a relação entre a proporção de comentários entre países (`comentaram_prop`) e o nível de hierarquia nas relações de um país (`PDI`), avaliou-se que a representação mais efetiva é o gráfico de dispersão.
+
+Seguindo o princípio da expressividade e efetividade, foi considerado válido utilizar o canal de cor para representar a variável de regiões `six_regions` e o canal de tamanho para representar a variável (`Internet`).
+
+Inserir outra variável neste contexto pode causar poluição visual. Neste caso, foi escolhido utilizar um **gráfico iterativo**. Neste, representa-se a quantidade da base de usuários daquele país (`usuarios`) ao aproximar o ponteiro do mouse, além de outras variáveis.
+
+```{r Q01, echo=TRUE, fig.height=5, fig.width=9, paged.print=TRUE}
+
+# https://cdr.ibpad.com.br/ggplot2.html
+# https://gramener.github.io/visual-vocabulary-vega/#/Correlation/
+# https://www.r-graph-gallery.com/bubble_chart_interactive_ggplotly.html
+
+ppc_interactive <- ppc %>%
+  mutate(text = paste("Country: ", country, "\nUsers: ", usuarios, "\nInternet: ", Internet, "\nSite: ", site, sep="")) %>%
+  
+  ggplot(aes( x = comentaram_prop, y = PDI, fill = six_regions, size = Internet, text=text )) +
+  geom_point(alpha = 0.65) +
+  
+  scale_size(range = c(1, 7)) +
+  scale_fill_viridis(discrete=TRUE) +
+  
+  theme( legend.title = element_blank() ) +
+  ylab("Proporção de comentários entre países") +
+  xlab("Relação hierárquica no país")
+
+ggplotly(ppc_interactive, 
+         tooltip="text", 
+         dynamicTicks = FALSE,
+         originalData = TRUE,
+         layerData = TRUE)
+```
+
 
 ## Outras formas de ver
 
-Em seguida, faça 5 visualizações que usem as mesmas variáveis e também pontos, mas que sejam **menos eficazes** que a que você escolheu acima. 
+**Em seguida, faça 5 visualizações que usem as mesmas variáveis e também pontos, mas que sejam menos eficazes que a que você escolheu acima.**
 
-## Bônus
+### Forma
 
-Inclua o continente dos países (`six_regions`) na visualização.
+O **canal de forma** exige bastante cuidado. Para dados com muitas categorias, como abaixo, as formas podem se sobrescrever e dificultar a identificação de cada elemento. O uso de um outro canal poderia ser mais adequado, como por exemplo o canal de cor.
+
+```{r menos-eficaz-forma, echo=TRUE, fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+ppc %>%
+  ggplot(aes( x = comentaram_prop, y = PDI, shape = six_regions, size = Internet )) +
+  geom_point(alpha = 0.65) +
+  
+  scale_size(range = c(1, 7)) +
+  scale_color_viridis(discrete=TRUE) +
+  
+  ylab("Proporção de comentários entre países") +
+  xlab("Relação hierárquica no país")
+```
+
+### Valores médios (claros) e extremos (escuros)
+
+Usar **tons diferentes** facilita a **identificação de categorias**. Em diversos casos, a **paleta de cores** escolhida pode confundir o público no momento de analisar os pontos.
+
+```{r menos-eficaz-cor, echo=TRUE, fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+ppc %>%
+  ggplot(aes( x = comentaram_prop, y = PDI, color = six_regions, size = Internet )) +
+  geom_point(alpha = 0.65) +
+  scale_colour_hue(h = c(180, 270), na.value = "black") +
+  ylab("Proporção de comentários entre países") +
+  xlab("Relação hierárquica no país")
+```
+
+### Tamanho
+
+O **canal de tamanho** pode ser utilizado para incluir uma variável contínua. Usar um tamanho pequeno pode impedir de diferenciar, ou mesmo encontrar, pontos específicos, mesmo com a ajuda de outros canais.
+
+```{r menos-eficaz-tamanho, echo=TRUE, fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+ppc %>%
+  ggplot(aes( x = comentaram_prop, y = PDI, color = six_regions, alpha = Internet )) +
+  geom_point() +
+  scale_color_viridis(discrete=TRUE) +
+
+  ylab("Proporção de comentários entre países") +
+  xlab("Relação hierárquica no país")
+```
+
+### Transparência.
+
+Neste caso, repara-se que a remoção do **canal de transparência** causa aglomeração de diversos pontos, impedir de visualizar, por exemplo, pontos que estão alinhados.
+
+```{r menos-eficaz-transparência, echo=TRUE, fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+ppc %>%
+  ggplot(aes( x = comentaram_prop, y = PDI, color = six_regions, size = Internet )) +
+  geom_point() +
+  scale_color_viridis(discrete=TRUE) +
+
+  ylab("Proporção de comentários entre países") +
+  xlab("Relação hierárquica no país")
+```
+
+### Diversos canais
+
+O uso de **diversos canais** em um mesmo gráfico precisa de bom senso para não causar **poluição visual**. Usar os canais de cor e forma para a mesma variável de categoria acaba adicionando um _overhead_ desnecessário para entendimento do gráfico.
+
+```{r ideal, echo=TRUE, fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+ppc %>%
+  ggplot(aes( x = comentaram_prop, y = PDI, color = six_regions, shape = six_regions, size = Internet)) +
+  geom_point(alpha = 0.65) +
+  
+  scale_size(range = c(1, 7)) +
+  scale_color_viridis(discrete=TRUE) +
+  
+  ylab("Proporção de comentários entre países") +
+  xlab("Relação hierárquica no país")
+```
+
+
+### Conclusão
+
+A utilização dos canais na visualização de dados deve ser avaliada de forma a elimitar o desnecessário para comunicar a mensagem. Os elementos devem ter a função de passar uma informação crítica. Além disso, a visualização precisa ser consistente e apresentar os elementos sem causar ambiguidade.
+
 
